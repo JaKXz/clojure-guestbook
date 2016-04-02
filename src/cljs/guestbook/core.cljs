@@ -6,28 +6,9 @@
             [goog.history.EventType :as HistoryEventType]
             [markdown.core :refer [md->html]]
             [guestbook.ajax :refer [load-interceptors!]]
-            [ajax.core :refer [GET POST]])
+            [ajax.core :refer [GET POST]]
+            [guestbook.messages :refer [message-list]])
   (:import goog.History))
-
-(defn nav-link [uri title page collapsed?]
-  [:li.nav-item
-   {:class (when (= page (session/get :page)) "active")}
-   [:a.nav-link
-    {:href uri
-     :on-click #(reset! collapsed? true)} title]])
-
-(defn navbar []
-  (let [collapsed? (r/atom true)]
-    (fn []
-      [:nav.navbar.navbar-light.bg-faded
-       [:button.navbar-toggler.hidden-sm-up
-        {:on-click #(swap! collapsed? not)} "☰"]
-       [:div.collapse.navbar-toggleable-xs
-        (when-not @collapsed? {:class "in"})
-        [:a.navbar-brand {:href "#/"} "guestbook"]
-        [:ul.nav.navbar-nav
-         [nav-link "#/" "Home" :home collapsed?]
-         [nav-link "#/about" "About" :about collapsed?]]]])))
 
 (defn about-page []
   [:div.container
@@ -43,12 +24,14 @@
     [:p [:a.btn.btn-primary.btn-lg {:href "http://luminusweb.net"} "Learn more »"]]]
    [:div.row
     [:div.col-md-12
-     [:h2 "Welcome to ClojureScript"]]]
-   (when-let [docs (session/get :docs)]
-     [:div.row
-      [:div.col-md-12
-       [:div {:dangerouslySetInnerHTML
-              {:__html (md->html docs)}}]]])])
+     [:h2 "Welcome to ClojureScript"]
+     [message-list (session/get :messages)]]]
+   ;(when-let [docs (session/get :docs)]
+   ;  [:div.row
+   ;   [:div.col-md-12
+   ;    [:div {:dangerouslySetInnerHTML
+   ;           {:__html (md->html docs)}}]]])
+])
 
 (def pages
   {:home #'home-page
@@ -84,11 +67,12 @@
   (GET (str js/context "/docs") {:handler #(session/put! :docs %)}))
 
 (defn mount-components []
-  (r/render [#'navbar] (.getElementById js/document "navbar"))
   (r/render [#'page] (.getElementById js/document "app")))
 
 (defn init! []
   (load-interceptors!)
   (fetch-docs!)
   (hook-browser-navigation!)
-  (mount-components))
+  (mount-components)
+  (GET "/api/messages"
+       {:handler #(session/put! :messages %)}))
