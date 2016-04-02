@@ -1,5 +1,5 @@
 -- :name get-messages :? :*
-select * from guestbook
+select * from guestbook;
 
 -- :name add-message :! :n
 insert into guestbook
